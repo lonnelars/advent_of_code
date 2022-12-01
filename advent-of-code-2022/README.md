@@ -1,4 +1,4 @@
-# advent-of-code
+# advent-of-code-2022
 
 A Clojure library designed to ... well, that part is up to you.
 

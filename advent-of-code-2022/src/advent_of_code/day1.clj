@@ -1,4 +1,4 @@
-(ns advent-of-code.day1
+(ns advent-of-code-2022.day1
   (:require [instaparse.core :as insta]
             [clojure.java.io :as io]))
 
@@ -16,7 +16,7 @@ Food = #'\\d+'.
     (->> input
          (insta/parse parser)
          (insta/transform transform-map)
-         (map (apply +))
+         (map #(apply + %))
          (apply max))))
 
 (defn part2 [data-set]
