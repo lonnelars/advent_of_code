@@ -32,7 +32,9 @@ whitespace = #'\\s'
     "Z" :win))
 
 (defn transform-map [letter-fn]
-  {:S #(into [] %&) :round vector :letter letter-fn})
+  {:S #(into [] %&)
+   :round vector
+   :letter letter-fn})
 
 (defn calc-point [[opponent me]]
   (let [hand (case me
