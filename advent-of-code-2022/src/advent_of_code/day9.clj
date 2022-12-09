@@ -51,16 +51,14 @@
      (Integer/parseInt dist)]))
 
 (defn apply-move
-  "Moves the head one space in the given direction. Returns the new head
-  and the remaining move."
-  [[xh yh] [dir distance]]
-  [(case dir
-     :right [(inc xh) yh]
-     :up [xh (inc yh)]
-     :left [(dec xh) yh]
-     :down [xh (dec yh)])
-
-   [dir (dec distance)]])
+  "Moves the head one space in the given direction. Returns the new
+  head."
+  [[xh yh] move]
+  (case move
+      :right [(inc xh) yh]
+      :up [xh (inc yh)]
+      :left [(dec xh) yh]
+      :down [xh (dec yh)]))
 
 (defn close?
   "Are the tail and head close to eachother?"
@@ -120,43 +118,33 @@
 (defn step
   "Moves the head to a new position as given by move. Moves all tails
   close to the head."
-  [{:keys [tails head] :as state} [dir distance :as move]]
-  (if (zero? distance)
+  [{:keys [tails head] :as state} move]
 
-    state
+  (let [new-head (apply-move head move)]
 
-    (let [[new-head remaining-move] (apply-move head move)]
+    {:tails (move-tails tails new-head)
+     :head new-head}))
 
-      (step {:tails (move-tails tails new-head)
-             :head new-head}
-            remaining-move))))
+(defn solve [data number-of-tails]
+  (let [tails
+        (repeat number-of-tails (list [0 0]))
+        
+        head
+        [0 0]
+
+        moves
+        (->> data
+             str/split-lines
+             (map parse)
+             (mapcat (fn [[dir distance]] (repeat distance dir))))
+
+        result
+        (reduce step {:tails tails :head head} moves)]
+
+    (count (set (last (:tails result))))))
 
 (defn part1 [data]
-  (let [tails
-        (list (list [0 0]))
-        
-        head
-        [0 0]
-
-        moves
-        (map parse (str/split-lines data))
-
-        result
-        (reduce step {:tails tails :head head} moves)]
-
-    (count (set (last (:tails result))))))
+  (solve data 1))
 
 (defn part2 [data]
-  (let [tails
-        (repeat 9 (list [0 0]))
-        
-        head
-        [0 0]
-
-        moves
-        (map parse (str/split-lines data))
-
-        result
-        (reduce step {:tails tails :head head} moves)]
-
-    (count (set (last (:tails result))))))
+  (solve data 9))
