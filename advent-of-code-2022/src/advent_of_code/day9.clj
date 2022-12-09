@@ -4,6 +4,8 @@
 
 (def input (slurp (io/resource "9.txt")))
 
+(def π Math/PI)
+
 (defn vlength
   "length of a 2d vector"
   [[x y]]
@@ -14,17 +16,17 @@
   [[x y]]
   (let [a (Math/atan2 y x)]
     (if (neg? a)
-      (+ a (* 2 Math/PI))
+      (+ a (* 2 π))
       a)))
 
 (defn quadrant
   "returns which quadrant the given 2d vector is in"
   [[x y]]
-  (let [theta (angle [x y])]
+  (let [θ (angle [x y])]
     (cond
-      (< theta (/ Math/PI 2)) 1
-      (< theta Math/PI) 2
-      (< theta (* Math/PI (/ 3 2))) 3
+      (< θ (/ π 2)) 1
+      (< θ π) 2
+      (< θ (* π (/ 3 2))) 3
       :else 4)))
 
 (defn tail->head
@@ -86,11 +88,11 @@
           (cond
             (= 0.0 a) [(inc xt) yt]
             (= 1 q) [(inc xt) (inc yt)]
-            (= (/ Math/PI 2) a) [xt (inc yt)]
+            (= (/ π 2) a) [xt (inc yt)]
             (= 2 q) [(dec xt) (inc yt)]
-            (= Math/PI a) [(dec xt) yt]
+            (= π a) [(dec xt) yt]
             (= 3 q) [(dec xt) (dec yt)]
-            (= (* Math/PI (/ 3 2)) a) [xt (dec yt)]
+            (= (* π (/ 3 2)) a) [xt (dec yt)]
             (= 4 q) [(inc xt) (dec yt)])]
 
       (if (close? new-tail head)
@@ -128,12 +130,17 @@
 
 (defn solve
   [data number-of-tails]
-  (let [tails
+  (let [;; A tail is represented as its history of positions. All
+        ;; tails start in [0 0].
+        tails
         (repeat number-of-tails (list [0 0]))
-        
+
+        ;; The head also starts in [0 0].
         head
         [0 0]
 
+        ;; translates input to a sequence of single moves.
+        ;; Example: "R 2" -> (:right :right).
         moves
         (->> data
              str/split-lines
@@ -141,7 +148,7 @@
              (mapcat (fn [[dir distance]] (repeat distance dir))))
 
         result
-        (reduce step {:tails tails :head head} moves)]
+        (reduce step {:head head :tails tails} moves)]
 
     (count (set (last (:tails result))))))
 
