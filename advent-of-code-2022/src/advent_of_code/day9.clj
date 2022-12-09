@@ -55,16 +55,16 @@
   head."
   [[xh yh] move]
   (case move
-      :right [(inc xh) yh]
-      :up [xh (inc yh)]
-      :left [(dec xh) yh]
-      :down [xh (dec yh)]))
+    :right [(inc xh) yh]
+    :up [xh (inc yh)]
+    :left [(dec xh) yh]
+    :down [xh (dec yh)]))
 
 (defn close?
-  "Are the tail and head close to eachother?"
+  "Are the tail and head close to each other?"
   [tail head]
   (<= (vlength (tail->head tail head))
-           (Math/sqrt 2)))
+      (Math/sqrt 2)))
 
 (defn move-tail
   "First argument is the path of one tail, second is the head. Moves
@@ -76,7 +76,7 @@
     
     (let [[xt yt :as tail] (peek path)
 
-          [x y :as v] (tail->head tail head)
+          v (tail->head tail head)
 
           a (angle v)
           
@@ -101,7 +101,8 @@
                    head)))))
 
 (defn move-tails
-  "Moves a list of tails close to the head."
+  "Moves a list of tails close to the head. Returns an updated list of
+  tails."
   [tails head]
   (if (empty? tails)
     
@@ -125,7 +126,8 @@
     {:tails (move-tails tails new-head)
      :head new-head}))
 
-(defn solve [data number-of-tails]
+(defn solve
+  [data number-of-tails]
   (let [tails
         (repeat number-of-tails (list [0 0]))
         
