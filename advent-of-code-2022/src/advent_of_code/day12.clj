@@ -4,56 +4,77 @@
             [loom.alg]
             [clojure.java.io :as io]))
 
-(def ex 
-"Sabqponm
+(def ex
+  "Sabqponm
 abcryxxl
 accszExk
 acctuvwj
 abdefghi")
 
+(defn indexed-matrix
+  [matrix]
+  (mapv (fn [rowi row]
+          (mapv (fn [coli value]
+                  {:coordinate [rowi coli]
+                   :value value})
+                (range)
+                row))
+        (range)
+        matrix))
+
+(def letter->elevation
+  (into {}
+        (map vector
+             "abcdefghijklmnopqrstuvwxyz"
+             (range))))
+
 (defn elevation [c]
   (cond (= \S c)
-        (int \a)
+        (get letter->elevation \a)
         (= \E c)
-        (int \z)
+        (get letter->elevation \z)
         :else
-        (int c)))
+        (get letter->elevation c)))
 
-(defn can-move-to? [from to]
+(defn can-move? [from to]
   (and (not (nil? to))
        (<= (- (elevation to)
               (elevation from))
            1)))
 
 (defn adjacent-nodes
-  [matrix row col value]
-  (let [adjacent-coordinates
-        [[row (inc col)]
-         [(dec row) col]
-         [row (dec col)]
-         [(inc row) col]]
-        
-        edges
-        (filter (fn [coordinate]
-                  (let [from
-                        (get-in matrix [row col])
+  ([matrix acc row]
+   (reduce (fn [acc cell]
+             (assoc acc
+                    (:coordinate cell)
+                    (adjacent-nodes matrix cell)))
+           acc
+           row))
+  ([matrix cell]
+   (let [{:keys [coordinate value]}
+         cell
 
-                        to
-                        (get-in matrix coordinate)]
+         [row col]
+         coordinate
 
-                    (can-move-to? value to)))
-                adjacent-coordinates)]
+         adjacent-coordinates
+         [[row (inc col)]
+          [(dec row) col]
+          [row (dec col)]
+          [(inc row) col]]
 
-    edges))
+         nodes
+         (filter (fn [adjacent-coordinate]
+                   (let [from
+                         value
 
-(defn reduce-row
-  [matrix acc [row-index row]]
-  (reduce (fn [acc [col-index c]]
-            (assoc acc
-                   [row-index col-index]
-                   (adjacent-nodes matrix row-index col-index c)))
-          acc
-          (map-indexed vector row)))
+                         to
+                         (get-in matrix adjacent-coordinate)]
+
+                     (can-move? from to)))
+                 adjacent-coordinates)]
+
+     nodes)))
 
 (defn parse [s]
   (let [matrix
@@ -62,40 +83,36 @@ abdefghi")
              (map vec)
              (into []))
 
-        coordinates
-        (for [row (range 0 (count matrix))
-              col (range 0 (count (first matrix)))]
-          [row col])
-        
         start
-        (first (filter (fn [coordinate]
-                         (= \S
-                            (get-in matrix
-                                    coordinate)))
-                       coordinates))
+        (->> matrix
+             indexed-matrix
+             flatten
+             (filter #(= \S (:value %)))
+             (map :coordinate)
+             first)
 
         end
-        (first (filter (fn [coordinate]
-                         (= \E
-                            (get-in matrix
-                                    coordinate)))
-                       coordinates))
-
+        (->> matrix
+             indexed-matrix
+             flatten
+             (filter #(= \E (:value %)))
+             (map :coordinate)
+             first)
 
         adjacency-map
-        (reduce (fn [acc row] (reduce-row matrix acc row))
+        (reduce (fn [acc row] (adjacent-nodes matrix acc row))
                 {}
-                (map-indexed vector matrix))]
+                (indexed-matrix matrix))]
 
     {:matrix
      matrix
 
      :graph
      (loom.graph/weighted-digraph adjacency-map)
-     
+
      :start
      start
-     
+
      :end
      end}))
 
@@ -116,21 +133,11 @@ abdefghi")
      (dec (count path)))))
 
 (defn find-as [matrix]
-  (let [indexed-matrix
-        (map-indexed (fn [rowi row]
-                       (map-indexed (fn [coli c]
-                                      {:coordinate [rowi coli]
-                                       :value c})
-                                    row))
-                     matrix)]
-
-    (->> indexed-matrix
-         flatten
-         (filter (fn [{:keys [_ value]}]
-                   (or (= \S value)
-                       (= \a value))))
-         (map (fn [{:keys [coordinate _]}]
-                coordinate)))))
+  (->> matrix
+       indexed-matrix
+       flatten
+       (filter #(or (= \S (:value %)) (= \a (:value %))))
+       (map :coordinate)))
 
 (defn part2
   ([]
