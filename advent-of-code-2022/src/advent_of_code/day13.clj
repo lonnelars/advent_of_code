@@ -32,7 +32,7 @@
         (if (not= :undecided
                   result)
           result
-          (in-order? (rest left) (rest right)))))
+          (recur (rest left) (rest right)))))
 
     :else
     (let [left'
@@ -41,7 +41,7 @@
           right'
           (if (int? right) [right] right)]
 
-      (in-order? left' right'))))
+      (recur left' right'))))
 
 (def input (slurp (io/resource "13.txt")))
 
@@ -68,19 +68,22 @@
   (let [packets
         (parse data)
 
-        keyfn
+        comparator
         (fn [a b]
           (case (in-order? a b)
             :in-order -1
             :undecided 0
             :out-of-order 1))
 
+        coll
+        (conj packets
+              [[2]]
+              [[6]])
+
         sorted
         (sort-by identity
-                 keyfn
-                 (conj packets
-                       [[2]]
-                       [[6]]))
+                 comparator
+                 coll)
 
         indexed
         (map vector
