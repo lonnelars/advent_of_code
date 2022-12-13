@@ -108,7 +108,7 @@ abdefghi")
      matrix
 
      :graph
-     (loom.graph/weighted-digraph adjacency-map)
+     (loom.graph/digraph adjacency-map)
 
      :start
      start
@@ -126,9 +126,9 @@ abdefghi")
          (parse data)
 
          path
-         (loom.alg/dijkstra-path graph
-                                 start
-                                 end)]
+         (loom.alg/bf-path graph
+                           start
+                           end)]
 
      (dec (count path)))))
 
@@ -150,9 +150,10 @@ abdefghi")
          (find-as matrix)
 
          paths
-         (map (fn [a] (loom.alg/dijkstra-path graph
-                                              a
-                                              end))
+         (map (fn [a]
+                (loom.alg/bf-path graph
+                                  a
+                                  end))
               as)]
 
      (->> paths
