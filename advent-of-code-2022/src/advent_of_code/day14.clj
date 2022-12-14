@@ -1,7 +1,8 @@
 (ns advent-of-code.day14
   (:require [instaparse.core :as insta]
             [clojure.set :as set]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [taoensso.tufte :as tufte :refer (defnp profile p)]))
 
 (def ex "498,4 -> 498,6 -> 496,6
 503,4 -> 502,4 -> 502,9 -> 494,9
@@ -52,55 +53,50 @@ coordinate = #'\\d+' <','> #'\\d+'
          (map path->set-of-points)
          (apply set/union))))
 
-(defn falling-forever? [rocks sand]
-  (let [lowest
-        (apply max
-               (map second
-                    rocks))]
-    (> (second sand)
-       lowest)))
+(defnp falling-forever? [lowest sand]
+  (> (second sand)
+     lowest))
 
-(defn init [data]
-  {:rocks
-   (parse data)
+(defnp air? [rocks sand-at-rest floor coordinate]
+  (and (not (contains? rocks
+                       coordinate))
+       (not (contains? sand-at-rest
+                       coordinate))
+       (not (> (second coordinate)
+               (- floor 1)))))
 
-   :current
-   [500 0]
+(defnp find-floor [rocks]
+  (+ 2
+     (apply max
+            (map second
+                 rocks))))
 
-   :sand-at-rest
-   (set nil)})
-
-(defn step
-  [{:keys [rocks current sand-at-rest] :as state}]
+(defnp step
+  [{:keys [rocks current sand-at-rest] :as state}
+   floor]
   (let [[x y]
-        current
-
-        floor
-        (+ 2
-           (apply max
-                  (map second
-                       rocks)))
-
-        air?
-        (fn [coordinate]
-          (and (not (contains? rocks
-                               coordinate))
-               (not (contains? sand-at-rest
-                               coordinate))
-               (not (> (second coordinate)
-                       (- floor 1)))))]
+        current]
     (cond
-      (air? [x (inc y)])
+      (air? rocks
+            sand-at-rest
+            floor
+            [x (inc y)])
       (assoc state
              :current
              [x (inc y)])
 
-      (air? [(dec x) (inc y)])
+      (air? rocks
+            sand-at-rest
+            floor
+            [(dec x) (inc y)])
       (assoc state
              :current
              [(dec x) (inc y)])
 
-      (air? [(inc x) (inc y)])
+      (air? rocks
+            sand-at-rest
+            floor
+            [(inc x) (inc y)])
       (assoc state
              :current
              [(inc x) (inc y)])
@@ -116,51 +112,86 @@ coordinate = #'\\d+' <','> #'\\d+'
 
 (def input (slurp (io/resource "14.txt")))
 
-(defn part1 [data]
-  (loop [state (init data)]
-    (let [{:keys [rocks current sand-at-rest]} state]
-      (if (falling-forever? rocks
-                            current)
+(defnp part1 [data]
+  (let [initial-state
+        {:rocks
+         (parse data)
 
-        (count sand-at-rest)
+         :current
+         [500 0]
 
-        (recur (step state))))))
+         :sand-at-rest
+         (set nil)}
+
+        lowest-rock
+        (apply max
+               (map second
+                    (:rocks initial-state)))
+
+        floor
+        (+ 2 lowest-rock)]
+    (loop [state
+           initial-state]
+      (let [{:keys [rocks current sand-at-rest]} state]
+        (if (falling-forever? lowest-rock current)
+
+          (count sand-at-rest)
+
+          (recur (step state floor)))))))
+
+(defnp full? [sand-at-rest]
+  (contains? sand-at-rest
+             [500 0]))
 
 (defn part2 [data]
-  (loop [state (init data)]
-    (let [{:keys [rocks current sand-at-rest]}
-          state]
-      (if (contains? sand-at-rest
-                     [500 0])
-        (count sand-at-rest)
-        (recur (step state))))))
+  (let [initial-state
+         {:rocks
+          (parse data)
+
+          :current
+          [500 0]
+
+          :sand-at-rest
+          (set nil)}
+
+         floor
+         (find-floor (:rocks initial-state))]
+
+    (loop [state
+           initial-state]
+      (let [{:keys [rocks current sand-at-rest]}
+            state]
+        (if (full? sand-at-rest)
+          (count sand-at-rest)
+          (recur (step state floor)))))))
 
 (defn print-state
   [{:keys [rocks current sand-at-rest]}]
-  (loop [x 480
-         y 0]
-    (let [xmax 520
-          ymax 11]
+  (let [xmin (- (apply min (map first rocks)) 10)
+        xmax (+ (apply max (map first rocks)) 10)
+        ymax (+ 2 (apply max (map second rocks)))]
+    (loop [x xmin
+           y 0
+           result []]
       (cond
         (and (= x xmax) (= y ymax))
-        (println)
-        
+        (apply str (conj result \newline))
+
         (= x xmax)
-        (do (println)
-            (recur 480 (inc y)))
+        (recur xmin (inc y) (conj result \newline))
 
         :else
-        (do
-          (cond
-            (contains? rocks [x y])
-            (print "#")
+        (let [result'
+              (cond
+                (contains? rocks [x y])
+                (conj result \#)
 
-            (contains? sand-at-rest [x y])
-            (print "o")
+                (contains? sand-at-rest [x y])
+                (conj result \o)
 
-            (= current [x y])
-            (print "+")
+                (= current [x y])
+                (conj result \+)
 
-            :else
-            (print "."))
-          (recur (inc x) y))))))
+                :else
+                (conj result \.))]
+          (recur (inc x) y result'))))))
